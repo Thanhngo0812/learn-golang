@@ -1,0 +1,14 @@
+server:
+  port: 8080
+  mode: "debug"
+  timeout: 30
+app:
+  name: "golangapp"
+  version: "1.0.0"
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "password"
+  dbname: "golang_db"
+  sslmode: "disable"

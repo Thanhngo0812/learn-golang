@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app-golang:
+    build:
+      context: ../../
+      dockerfile: deployments/docker/Dockerfile
+    container_name: golang_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-golang
+    environment:
+      - DATABASE_HOST=db-golang
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=password
+      - DATABASE_DBNAME=golang_db
+
+  db-golang:
+    image: postgres:15-alpine
+    container_name: golang_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: golang_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../db/init.sql:/docker-entrypoint-initdb.d/init.sql
