@@ -1,34 +1,41 @@
 package db
 
 import (
-	"database/sql"
-	"fmt"
-	"golang-app/internal/config"
-	"log"
+    "fmt"
+    "golang-app/internal/config"
+    "log"
 
-	_ "github.com/lib/pq" 
+    "gorm.io/driver/postgres" // Sử dụng driver của gorm
+    "gorm.io/gorm"           // Import GORM
 )
 
-func NewPostgresDB(cfg *config.Config) (*sql.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.DBName,
-		cfg.Database.SSLMode,
-	)
+// Đổi kiểu trả về từ *sql.DB thành *gorm.DB
+func NewPostgresDB(cfg *config.Config) (*gorm.DB, error) {
+    dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+        cfg.Database.Host,
+        cfg.Database.Port,
+        cfg.Database.User,
+        cfg.Database.Password,
+        cfg.Database.DBName,
+        cfg.Database.SSLMode,
+    )
 
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
-	}
+    // Sử dụng gorm.Open thay vì sql.Open
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        return nil, fmt.Errorf("failed to connect to database: %w", err)
+    }
 
-	// Kiểm tra kết nối (Ping)
-	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
+    // GORM đã tự động Ping khi kết nối, nhưng nếu bạn muốn chắc chắn:
+    sqlDB, err := db.DB()
+    if err != nil {
+        return nil, fmt.Errorf("failed to get sql.DB from gorm: %w", err)
+    }
+    
+    if err = sqlDB.Ping(); err != nil {
+        return nil, fmt.Errorf("failed to ping database: %w", err)
+    }
 
-	log.Println("✅ Connected to PostgreSQL successfully!")
-	return db, nil
+    log.Println("✅ Connected to PostgreSQL via GORM successfully!")
+    return db, nil
 }

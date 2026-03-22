@@ -5,6 +5,8 @@ server:
 app:
   name: "golangapp"
   version: "1.0.0"
+  jwt_secret: "my_super_secret_jwt_key_123"
+  jwt_expiration: 24
 database:
   host: "localhost"
   port: 5432
@@ -12,3 +14,12 @@ database:
   password: "password"
   dbname: "golang_db"
   sslmode: "disable"
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+cloudinary:
+  cloud_name: ""
+  api_key: ""
+  api_secret: ""

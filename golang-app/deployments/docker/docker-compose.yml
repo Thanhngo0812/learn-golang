@@ -16,6 +16,7 @@ services:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=password
       - DATABASE_DBNAME=golang_db
+      - REDIS_HOST=redis-golang
 
   db-golang:
     image: postgres:15-alpine
@@ -28,3 +29,10 @@ services:
       - "5432:5432"
     volumes:
       - ../db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis-golang:
+    image: redis:7-alpine
+    container_name: golang_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
