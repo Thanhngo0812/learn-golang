@@ -1,0 +1,10 @@
+2026/03/12 08:15:16 Connected to Redis successfully at redis-golang:6379
+[GIN-debug] GET    /api/v1/auctions/hot      --> golang-app/internal/controller.(*AuctionController).GetHotAuctions-fm (5 handlers)
+[GIN-debug] GET    /api/v1/auctions/:id      --> golang-app/internal/controller.(*AuctionController).GetAuctionByID-fm (6 handlers)
+[GIN-debug] GET    /api/v1/auctions/nocache/:id --> golang-app/internal/controller.(*AuctionController).GetAuctionByIDNoCache-fm (6 handlers)
+[GIN-debug] POST   /api/v1/auctions/:id/bids --> golang-app/internal/controller.(*BidController).PlaceBid-fm (7 handlers)
+[GIN-debug] GET    /api/v1/ws/auctions/:id   --> golang-app/internal/controller.(*WSController).ServeWS-fm (5 handlers)
+2026/03/12 08:15:36 [GIN] 200 |  1.051862875s | GET     | /api/v1/auctions/2
+[GIN] 2026/03/12 - 08:15:36 | 200 |  1.051909988s |      172.19.0.1 | GET      "/api/v1/auctions/2"
+2026/03/12 08:15:36 [GIN] 200 |     616.326µs | GET     | /api/v1/auctions/2
+[GIN] 2026/03/12 - 08:15:36 | 200 |     705.916µs |      172.19.0.1 | GET      "/api/v1/auctions/2"
