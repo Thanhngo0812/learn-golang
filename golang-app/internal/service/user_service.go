@@ -1,12 +1,17 @@
 package service
 
 import (
+	"errors"
 	"golang-app/internal/config"
 	"golang-app/internal/model/dto"
 	"golang-app/internal/model/entity"
 	"golang-app/internal/repository"
 	"golang-app/pkg/apperror"
+	"golang-app/pkg/utils"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -100,4 +105,138 @@ func (s *userService) PublicRegister(req *dto.RegisterRequest) (*entity.User, er
 
 	newUser.Wallet = newWallet
 	return newUser, nil
+}
+
+func (s *userService) Login(req *dto.LoginRequest, cfg *config.Config) (*dto.LoginResponse, error) {
+	// 1. Tìm user theo email
+	user, err := s.repo.GetByEmail(req.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Email không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+
+	// 2. Kiểm tra tài khoản có bị khóa không
+	if !user.IsActive {
+		return nil, apperror.NewBadRequest(nil, "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin")
+	}
+
+	// 3. So sánh mật khẩu
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	if err != nil {
+		return nil, apperror.NewBadRequest(err, "Mật khẩu không chính xác")
+	}
+
+	// 4. Tạo JWT Token
+	token, err := utils.GenerateToken(user.ID, user.Role, cfg.App.JWTSecret, cfg.App.JWTExpiration)
+	if err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+
+	// 5. Trả về response
+	return &dto.LoginResponse{
+		Token: token,
+		User:  user,
+	}, nil
+}
+
+// 1. Get List
+func (s *userService) GetListUsers() ([]entity.User, error) {
+	users, err := s.repo.GetAll()
+	if err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+	return users, nil
+}
+
+// 2. Get Detail
+func (s *userService) GetUserDetail(id int) (*entity.User, error) {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
+}
+
+// 3. Update User
+func (s *userService) UpdateUser(id int, req *dto.UpdateUserRequest) (*entity.User, error) {
+	// Bước 1: Tìm user cũ trước
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Không tìm thấy người dùng để cập nhật")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+
+	// Bước 2: Cập nhật thông tin mới (nếu có gửi lên)
+	if req.FullName != "" {
+		user.FullName = req.FullName
+	}
+	if req.PhoneNumber != "" {
+		user.PhoneNumber = req.PhoneNumber
+	}
+	if req.IsActive != nil {
+		user.IsActive = *req.IsActive
+	}
+
+	// Bước 3: Lưu xuống DB
+	if err := s.repo.Update(user); err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+
+	return user, nil
+}
+
+// 4. Delete User
+func (s *userService) DeleteUser(id int) error {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return apperror.NewInternal(err)
+	}
+	if user.Role == "admin" {
+		return apperror.NewBadRequest(nil, "Không thể xóa người dùng có quyền Quản trị viên")
+	}
+
+	// Kiểm tra user đã tham gia bid chưa
+	hasBids, err := s.bidRepo.HasUserBids(user.ID)
+	if err != nil {
+		return apperror.NewInternal(err)
+	}
+	if hasBids {
+		return apperror.NewBadRequest(nil, "Không thể xóa người dùng đã tham gia đấu giá. Hãy khóa tài khoản thay vì xóa")
+	}
+
+	// Kiểm tra user có sản phẩm không
+	hasProducts, err := s.repo.HasProducts(user.ID)
+	if err != nil {
+		return apperror.NewInternal(err)
+	}
+	if hasProducts {
+		return apperror.NewBadRequest(nil, "Không thể xóa người dùng đã có sản phẩm. Hãy khóa tài khoản thay vì xóa")
+	}
+
+	if err := s.repo.Delete(id); err != nil {
+		return apperror.NewInternal(err)
+	}
+	return nil
+}
+
+// GetMyProfile lấy thông tin cá nhân kèm ví
+func (s *userService) GetMyProfile(userID uint) (*entity.User, error) {
+	user, err := s.repo.GetByIDWithWallet(int(userID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
 }
