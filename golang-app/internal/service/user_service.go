@@ -9,10 +9,10 @@ import (
 	"golang-app/pkg/apperror"
 	"golang-app/pkg/utils"
 	"strings"
-
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"golang.org/x/crypto/bcrypt"
 )
+
 
 type UserService interface {
 	Register(req *dto.RegisterRequest) (*entity.User, error)
@@ -36,13 +36,14 @@ func NewUserService(repo repository.UserRepository, bidRepo repository.BidReposi
 	return &userService{repo: repo, bidRepo: bidRepo}
 }
 
+
 func (s *userService) Register(req *dto.RegisterRequest) (*entity.User, error) {
 	// 1. Chuẩn bị dữ liệu (Mapping DTO -> Entity)
 	userRole := "bidder"
 	if req.Role != "" {
 		userRole = req.Role
 	}
-
+	
 	newUser := &entity.User{
 		FullName:     req.FullName,
 		Email:        req.Email,
@@ -53,28 +54,28 @@ func (s *userService) Register(req *dto.RegisterRequest) (*entity.User, error) {
 	}
 	if req.Role == "admin" {
 		if err := s.repo.Create(newUser); err != nil {
-			if err.Error() == "conflict" {
-				return nil, apperror.NewConflict(nil, "email hoặc số điện thoại đã tồn tại")
-			}
-			return nil, apperror.NewInternal(err)
+		if err.Error() == "conflict" {
+			return nil, apperror.NewConflict(nil, "email hoặc số điện thoại đã tồn tại")
 		}
-	} else {
-		newWallet := &entity.Wallet{} // Tạo struct rỗng, Repo sẽ điền UserID và Balance
-		// 2. Gọi Repository để thực thi Transaction
-		// Service không cần biết bên dưới là SQL Transaction hay gì cả
-		err := s.repo.RegisterUserTx(newUser, newWallet)
-
-		if err != nil {
-			// Mapping lỗi từ Repo sang lỗi App (nếu cần)
-			if strings.HasPrefix(err.Error(), "conflict") {
-				return nil, apperror.NewConflict(nil, "email hoặc số điện thoại đã tồn tại")
-			}
-			return nil, apperror.NewInternal(err)
-		}
-		// 3. Gán ví vào user để trả về client luôn
-		newUser.Wallet = newWallet
+		return nil, apperror.NewInternal(err)
 	}
-
+	}else{
+	newWallet := &entity.Wallet{} // Tạo struct rỗng, Repo sẽ điền UserID và Balance
+	// 2. Gọi Repository để thực thi Transaction
+	// Service không cần biết bên dưới là SQL Transaction hay gì cả
+	err := s.repo.RegisterUserTx(newUser, newWallet)
+	
+	if err != nil {
+		// Mapping lỗi từ Repo sang lỗi App (nếu cần)
+		if strings.HasPrefix(err.Error(), "conflict") {
+			return nil, apperror.NewConflict(nil, "email hoặc số điện thoại đã tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+	// 3. Gán ví vào user để trả về client luôn
+	newUser.Wallet = newWallet
+	}
+	
 	return newUser, nil
 }
 
@@ -95,14 +96,14 @@ func (s *userService) PublicRegister(req *dto.RegisterRequest) (*entity.User, er
 
 	newWallet := &entity.Wallet{}
 	err := s.repo.RegisterUserTx(newUser, newWallet)
-
+	
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "conflict") {
 			return nil, apperror.NewConflict(nil, "email hoặc số điện thoại đã tồn tại")
 		}
 		return nil, apperror.NewInternal(err)
 	}
-
+	
 	newUser.Wallet = newWallet
 	return newUser, nil
 }
@@ -236,6 +237,65 @@ func (s *userService) GetMyProfile(userID uint) (*entity.User, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
 		}
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
+}
+
+// UpdateMyProfile cập nhật thông tin cá nhân (chỉ full_name, phone_number)
+func (s *userService) UpdateMyProfile(userID uint, req *dto.UpdateUserRequest) (*entity.User, error) {
+	user, err := s.repo.GetByID(int(userID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+
+	if req.FullName != "" {
+		user.FullName = req.FullName
+	}
+	if req.PhoneNumber != "" {
+		user.PhoneNumber = req.PhoneNumber
+	}
+	// Không cho sửa IsActive từ đây
+
+	if err := s.repo.Update(user); err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
+}
+
+// LockUser khóa tài khoản (Admin only)
+func (s *userService) LockUser(id int) (*entity.User, error) {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+	if user.Role == "admin" {
+		return nil, apperror.NewBadRequest(nil, "Không thể khóa tài khoản Admin")
+	}
+	user.IsActive = false
+	if err := s.repo.Update(user); err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
+}
+
+// UnlockUser mở khóa tài khoản (Admin only)
+func (s *userService) UnlockUser(id int) (*entity.User, error) {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+	user.IsActive = true
+	if err := s.repo.Update(user); err != nil {
 		return nil, apperror.NewInternal(err)
 	}
 	return user, nil
