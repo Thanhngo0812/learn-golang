@@ -224,3 +224,80 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	}
 	response.Success(ctx, http.StatusOK, user)
 }
+
+// DeleteUser godoc
+// @Summary      Xóa người dùng
+// @Description  Xóa tài khoản người dùng khỏi hệ thống
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  response.SuccessResponse
+// @Failure      400  {object}  response.ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id} [delete]
+func (c *UserController) DeleteUser(ctx *gin.Context) {
+	id, err := utils.GetIDFromParam(ctx)
+	if err != nil {
+		response.Error(ctx, err)
+		return
+	}
+	err = c.service.DeleteUser(id)
+	if err != nil {
+		response.Error(ctx, err)
+		return
+	}
+	response.Success(ctx, http.StatusOK, "Đã xóa người dùng thành công")
+}
+
+// LockUser khóa tài khoản (Admin only)
+// LockUser godoc
+// @Summary      Khóa tài khoản
+// @Description  Admin khóa tài khoản người dùng
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  response.SuccessResponse
+// @Failure      400  {object}  response.ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id}/lock [patch]
+func (c *UserController) LockUser(ctx *gin.Context) {
+	id, err := utils.GetIDFromParam(ctx)
+	if err != nil {
+		response.Error(ctx, err)
+		return
+	}
+	user, err := c.service.LockUser(id)
+	if err != nil {
+		response.Error(ctx, err)
+		return
+	}
+	response.Success(ctx, http.StatusOK, user)
+}
+
+// UnlockUser mở khóa tài khoản (Admin only)
+// UnlockUser godoc
+// @Summary      Mở khóa tài khoản
+// @Description  Admin mở khóa tài khoản người dùng
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  response.SuccessResponse
+// @Failure      400  {object}  response.ErrorResponse
+// @Security     BearerAuth
+// @Router       /users/{id}/unlock [patch]
+func (c *UserController) UnlockUser(ctx *gin.Context) {
+	id, err := utils.GetIDFromParam(ctx)
+	if err != nil {
+		response.Error(ctx, err)
+		return
+	}
+	user, err := c.service.UnlockUser(id)
+	if err != nil {
+		response.Error(ctx, err)
+		return
+	}
+	response.Success(ctx, http.StatusOK, user)
+}
