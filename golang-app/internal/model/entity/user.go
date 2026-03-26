@@ -3,6 +3,7 @@ package entity
 import (
 	"strings"
 	"time"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -53,6 +54,7 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 // Dùng để kiểm tra trùng lặp khi đăng ký
 func UserByEmailOrPhone(email, phone string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("email = ? OR phone_number =?", email, phone)
 		return db.Where("email = ? OR phone_number = ?", email, phone)
 	}
 }

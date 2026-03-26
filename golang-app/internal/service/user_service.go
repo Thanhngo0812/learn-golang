@@ -242,3 +242,61 @@ func (s *userService) GetMyProfile(userID uint) (*entity.User, error) {
 	return user, nil
 }
 
+// UpdateMyProfile cập nhật thông tin cá nhân (chỉ full_name, phone_number)
+func (s *userService) UpdateMyProfile(userID uint, req *dto.UpdateUserRequest) (*entity.User, error) {
+	user, err := s.repo.GetByID(int(userID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+
+	if req.FullName != "" {
+		user.FullName = req.FullName
+	}
+	if req.PhoneNumber != "" {
+		user.PhoneNumber = req.PhoneNumber
+	}
+	// Không cho sửa IsActive từ đây
+
+	if err := s.repo.Update(user); err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
+}
+
+// LockUser khóa tài khoản (Admin only)
+func (s *userService) LockUser(id int) (*entity.User, error) {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+	if user.Role == "admin" {
+		return nil, apperror.NewBadRequest(nil, "Không thể khóa tài khoản Admin")
+	}
+	user.IsActive = false
+	if err := s.repo.Update(user); err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
+}
+
+// UnlockUser mở khóa tài khoản (Admin only)
+func (s *userService) UnlockUser(id int) (*entity.User, error) {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NewNotFound(err, "Người dùng không tồn tại")
+		}
+		return nil, apperror.NewInternal(err)
+	}
+	user.IsActive = true
+	if err := s.repo.Update(user); err != nil {
+		return nil, apperror.NewInternal(err)
+	}
+	return user, nil
+}
