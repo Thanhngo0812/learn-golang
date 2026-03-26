@@ -5,6 +5,7 @@ import (
 	"golang-app/internal/model/entity"
 	"golang-app/internal/repository"
 	"golang-app/pkg/apperror"
+
 	"gorm.io/gorm"
 )
 
@@ -66,4 +67,3 @@ func (s *walletService) GetTransactions(userID uint) ([]entity.Transaction, erro
 	}
 	return transactions, nil
 }
-

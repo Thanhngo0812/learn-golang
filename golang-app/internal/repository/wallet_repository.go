@@ -3,16 +3,17 @@ package repository
 import (
 	"errors"
 	"golang-app/internal/model/entity"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 var (
-	ErrInvalidWalletAmount         = errors.New("invalid wallet amount")
-	ErrInsufficientAvailableFunds  = errors.New("insufficient available funds")
-	ErrInsufficientFrozenFunds     = errors.New("insufficient frozen funds")
-	ErrInvalidWalletState          = errors.New("invalid wallet state")
-	ErrWalletTransferSameAccount   = errors.New("wallet transfer requires different accounts")
+	ErrInvalidWalletAmount        = errors.New("invalid wallet amount")
+	ErrInsufficientAvailableFunds = errors.New("insufficient available funds")
+	ErrInsufficientFrozenFunds    = errors.New("insufficient frozen funds")
+	ErrInvalidWalletState         = errors.New("invalid wallet state")
+	ErrWalletTransferSameAccount  = errors.New("wallet transfer requires different accounts")
 )
 
 type WalletRepository interface {
