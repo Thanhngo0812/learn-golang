@@ -32,7 +32,7 @@ func (User) TableName() string {
 // ==========================================
 
 func (u *User) BeforeSave(tx *gorm.DB) (err error) {
-	/// Chuẩn hóa Email
+	// Chuẩn hóa Email
 	u.Email = strings.ToLower(strings.TrimSpace(u.Email))
 
 	// Hash Password
@@ -55,6 +55,7 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 func UserByEmailOrPhone(email, phone string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("email = ? OR phone_number =?", email, phone)
+		return db.Where("email = ? OR phone_number = ?", email, phone)
 	}
 }
 

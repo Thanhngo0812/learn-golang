@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuctionHub — Hệ thống Đấu giá Trực tuyến</title>
+    <meta name="description" content="Nền tảng đấu giá trực tuyến realtime sử dụng Golang, Redis, WebSocket">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- GUEST HEADER (hiển thị khi chưa đăng nhập, trang public) -->
+    <header id="guest-header" class="guest-header hidden">
+        <div class="guest-header-inner">
+            <div class="logo" onclick="navigate('home')" style="cursor:pointer;">🔨 AuctionHub</div>
+            <nav class="guest-nav">
+                <a onclick="navigate('home')" class="guest-nav-link">Trang chủ</a>
+                <a onclick="navigate('auctions')" class="guest-nav-link">Khám phá</a>
+                <a onclick="navigate('categories')" class="guest-nav-link">Danh mục</a>
+            </nav>
+            <div class="guest-auth-btns">
+                <button class="btn btn-outline btn-sm" onclick="navigate('login')">Đăng nhập</button>
+                <button class="btn btn-primary btn-sm" onclick="navigate('register')">Đăng ký</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <nav id="sidebar" class="sidebar hidden">
+        <div class="sidebar-header">
+            <div class="logo">🔨 AuctionHub</div>
+            <div id="notif-bell" class="notif-bell" onclick="navigate('notifications')">
+                🔔 <span id="notif-count" class="notif-count hidden">0</span>
+            </div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#dashboard" data-page="dashboard" class="nav-link active">
+                <span class="icon">📊</span> Dashboard
+            </a></li>
+            <li><a href="#auctions" data-page="auctions" class="nav-link">
+                <span class="icon">🔍</span> Khám phá
+            </a></li>
+            <li><a href="#wallet" data-page="wallet" class="nav-link">
+                <span class="icon">💰</span> Ví tiền
+            </a></li>
+            <li><a href="#my-bids" data-page="my-bids" class="nav-link">
+                <span class="icon">📋</span> Lịch sử Bid
+            </a></li>
+            <li><a href="#watchlist" data-page="watchlist" class="nav-link">
+                <span class="icon">❤️</span> Quan tâm
+            </a></li>
+            <li><a href="#won" data-page="won" class="nav-link">
+                <span class="icon">🏆</span> Đã thắng
+            </a></li>
+            <li><a href="#categories" data-page="categories" class="nav-link">
+                <span class="icon">📁</span> Danh mục
+            </a></li>
+            <li id="seller-product-link" class="hidden"><a href="#manage-products" data-page="manage-products" class="nav-link">
+                <span class="icon">📦</span> Quản lý sản phẩm
+            </a></li>
+            <li id="admin-category-link" class="hidden"><a href="#manage-categories" data-page="manage-categories" class="nav-link">
+                <span class="icon">📂</span> Phê duyệt danh mục
+            </a></li>
+            <li id="admin-link" class="hidden"><a href="#admin" data-page="admin" class="nav-link">
+                <span class="icon">👥</span> Quản lý Users
+            </a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div id="user-info" class="user-info"></div>
+            <button id="btn-logout" class="btn btn-outline btn-sm">Đăng xuất</button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content">
+        <div id="app"></div>
+    </main>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container"></div>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
